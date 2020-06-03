@@ -219,6 +219,57 @@ func VerifySign(aliPayPublicKey string, bean interface{}) (ok bool, err error) {
 	return true, nil
 }
 
+// VerifySign 支付宝异步通知验签
+//    注意：APP支付，手机网站支付，电脑网站支付 暂不支持同步返回验签
+//    aliPayPublicKey：支付宝公钥
+//    bean：此参数为异步通知解析的结构体或BodyMap：notifyReq 或 bm，推荐通 BodyMap 验签
+//    返回参数ok：是否验签通过
+//    返回参数err：错误信息
+//    验签文档：https://opendocs.alipay.com/open/200/106120
+func VerifyMD5Sign(aliPayKey string, bean interface{}) (ok bool, err error) {
+	if aliPayKey == gopay.NULL {
+		return false, errors.New("aliPayPublicKey is null")
+	}
+	if bean == nil {
+		return false, errors.New("bean is nil")
+	}
+	var (
+		bodySign     string
+		bodySignType string
+		bm           = make(gopay.BodyMap)
+	)
+	if reflect.ValueOf(bean).Kind() == reflect.Map {
+		if bm, ok = bean.(gopay.BodyMap); ok {
+			bodySign = bm.Get("sign")
+			bodySignType = bm.Get("sign_type")
+			bm.Remove("sign")
+			bm.Remove("sign_type")
+		}
+	} else {
+		bs, err := json.Marshal(bean)
+		if err != nil {
+			return false, fmt.Errorf("json.Marshal：%w", err)
+		}
+		if err = json.Unmarshal(bs, &bm); err != nil {
+			return false, fmt.Errorf("json.Unmarshal(%s)：%w", string(bs), err)
+		}
+		bodySign = bm.Get("sign")
+		bodySignType = bm.Get("sign_type")
+		bm.Remove("sign")
+		bm.Remove("sign_type")
+	}
+
+	if bodySignType != MD5 {
+		return false, nil
+	}
+
+	s, err := GetMd5Sign(bm, aliPayKey)
+	if err != nil {
+		return false, err
+	}
+	return s == bodySign, nil
+}
+
 func verifySign(signData, sign, signType, aliPayPublicKey string) (err error) {
 	var (
 		h         hash.Hash
