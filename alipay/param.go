@@ -2,6 +2,7 @@ package alipay
 
 import (
 	"crypto"
+	"crypto/md5"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha1"
@@ -230,6 +231,14 @@ func GetRsaSign(bm gopay.BodyMap, signType string, t PKCSType, privateKey string
 	}
 	sign = base64.StdEncoding.EncodeToString(encryptedBytes)
 	return
+}
+func GetMd5Sign(bm gopay.BodyMap, md5Key string) (sign string, err error) {
+	h := md5.New()
+	txt := bm.EncodeAliPaySignParams() + md5Key
+	if _, err = h.Write([]byte(txt)); err != nil {
+		return
+	}
+	return string(h.Sum(nil)), nil
 }
 
 // 格式化请求URL参数
