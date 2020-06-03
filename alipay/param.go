@@ -9,6 +9,7 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"fmt"
@@ -238,7 +239,7 @@ func GetMd5Sign(bm gopay.BodyMap, md5Key string) (sign string, err error) {
 	if _, err = h.Write([]byte(txt)); err != nil {
 		return
 	}
-	return string(h.Sum(nil)), nil
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 // 格式化请求URL参数
