@@ -768,33 +768,31 @@ func getSignData(bs []byte) (signData string) {
 
 // create_direct_pay_by_user(即时到账交易接口)
 //    文档地址：https://opendocs.alipay.com/open/62/104743
-func (a *Client) TradeWebPay(bm gopay.BodyMap) (payUrl string, err error) {
+func (a *Client) TradeWebPay(bm gopay.BodyMap, signType string) (payUrl string, err error) {
 	if bm.Get("service") == gopay.NULL {
 		bm.Set("service", "create_direct_pay_by_user")
 	}
 	bm.Set("partner", a.AppId)
-	bm.Set("input_charset", a.AppId)
 	if a.Charset == gopay.NULL {
-		bm.Set("input_charset", "utf-8")
+		bm.Set("_input_charset", "utf-8")
 	} else {
-		bm.Set("input_charset", a.Charset)
-	}
-	if bm.Get("sign_type") == gopay.NULL {
-		bm.Set("sign_type", MD5)
+		bm.Set("_input_charset", a.Charset)
 	}
 	sign := ""
-	if bm.Get("sign_type") == MD5 {
+	if signType == gopay.NULL || signType == MD5 {
 		s, err := GetMd5Sign(bm, a.MD5Key)
 		if err != nil {
 			return "", err
 		}
 		sign = s
+		bm.Set("sign_type", MD5)
 	} else {
 		s, err := GetRsaSign(bm, bm.Get("sign_type"), a.PrivateKeyType, a.PrivateKey)
 		if err != nil {
 			return "", err
 		}
 		sign = s
+		bm.Set("sign_type", signType)
 	}
 	bm.Set("sign", sign)
 	param := FormatURLParam(bm)
